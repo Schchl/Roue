@@ -120,11 +120,30 @@
             position: relative;
             margin: 30px auto;
             display: inline-block;
+            max-width: 100%;
+            overflow: visible;
         }
 
         #canvas {
             display: block;
             margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        @media (max-width: 768px) {
+            #canvas {
+                width: 100%;
+                height: auto;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .wheel-container {
+                margin: 20px auto;
+            }
         }
 
         .result-box {
@@ -215,7 +234,7 @@
                 <li>🎡 Tournez la roue pour découvrir votre gain</li>
             </ul>
             <p><strong>Important :</strong> Vous devez présenter la capture d'écran de votre avis pour valider votre participation !</p>
-            <a href="https://g.page/r/CcOzsvgu90sVEAE/review?utm_source=gbp&utm_medium=reviews&utm_campaign=qr" target="_blank" class="google-link">
+            <a href="https://g.page/r/VOTRE_LIEN_GOOGLE/review" target="_blank" class="google-link">
                 ⭐ Laisser un avis Google
             </a>
             <br>
@@ -285,15 +304,28 @@
         let isSpinning = false;
 
         const prizes = [
-            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '✖️' },
-            { text: 'Café offert ☕', winning: true, color: '#1a1a1a', icon: '🎁' },
-            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '✖️' },
-            { text: '10% réduction 🎁', winning: true, color: '#1a1a1a', icon: '🎁' },
-            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '✖️' },
-            { text: 'Produit gratuit 🎉', winning: true, color: '#1a1a1a', icon: '🎁' }
+            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌' },
+            { text: 'Café offert ☕', winning: true, color: '#df0000', icon: '🏆' },
+            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌' },
+            { text: '10% réduction 🎁', winning: true, color: '#df0000', icon: '🏆' },
+            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌' },
+            { text: 'Produit gratuit 🎉', winning: true, color: '#df0000', icon: '🏆' }
         ];
 
         function drawWheel(rotation = 0) {
+            // Ajuster la taille du canvas pour mobile
+            const isMobile = window.innerWidth <= 768;
+            const size = isMobile ? Math.min(window.innerWidth - 40, 350) : 400;
+            
+            if (canvas.width !== size) {
+                canvas.width = size;
+                canvas.height = size;
+            }
+
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = (size / 2) - 30;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             ctx.translate(centerX, centerY);
@@ -354,6 +386,10 @@
         }
 
         function drawPointer() {
+            const isMobile = window.innerWidth <= 768;
+            const size = isMobile ? Math.min(window.innerWidth - 40, 350) : 400;
+            const centerX = size / 2;
+            
             ctx.save();
             ctx.translate(centerX, 30);
             
@@ -516,6 +552,13 @@
 
         // Dessiner la roue initiale
         drawWheel();
+
+        // Redessiner la roue lors du redimensionnement
+        window.addEventListener('resize', () => {
+            if (!isSpinning) {
+                drawWheel(currentRotation);
+            }
+        });
     </script>
 </body>
 </html>
