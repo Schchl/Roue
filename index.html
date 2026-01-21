@@ -140,6 +140,14 @@
             margin-bottom: 10px;
         }
 
+        .result-box p {
+            color: white;
+        }
+
+        .result-box strong {
+            color: white;
+        }
+
         .google-link {
             display: inline-block;
             background: white;
@@ -244,6 +252,29 @@
     </div>
 
     <script>
+        // Tracking des événements
+        function trackEvent(eventName) {
+            // Incrémenter le compteur local
+            const count = parseInt(localStorage.getItem(eventName) || '0') + 1;
+            localStorage.setItem(eventName, count.toString());
+            console.log(`Event tracked: ${eventName} (Total: ${count})`);
+        }
+
+        // Tracker la visite de la page (scan QR code)
+        window.addEventListener('load', () => {
+            trackEvent('qr_scans');
+            displayStats();
+        });
+
+        function displayStats() {
+            const scans = localStorage.getItem('qr_scans') || '0';
+            const spins = localStorage.getItem('wheel_spins') || '0';
+            console.log(`=== STATISTIQUES ===`);
+            console.log(`QR Codes scannés: ${scans}`);
+            console.log(`Roues tournées: ${spins}`);
+            console.log(`===================`);
+        }
+
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const centerX = 200;
@@ -254,11 +285,11 @@
         let isSpinning = false;
 
         const prizes = [
-            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '❌' },
+            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '✖️' },
             { text: 'Café offert ☕', winning: true, color: '#1a1a1a', icon: '🎁' },
-            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '❌' },
+            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '✖️' },
             { text: '10% réduction 🎁', winning: true, color: '#1a1a1a', icon: '🎁' },
-            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '❌' },
+            { text: 'Perdu 😢', winning: false, color: '#df0000', icon: '✖️' },
             { text: 'Produit gratuit 🎉', winning: true, color: '#1a1a1a', icon: '🎁' }
         ];
 
@@ -360,6 +391,9 @@
             isSpinning = true;
             const spinBtn = document.getElementById('spin-btn');
             spinBtn.disabled = true;
+
+            // Tracker le tour de roue
+            trackEvent('wheel_spins');
 
             const totalRotation = Math.PI * 2 * 8 + (Math.random() * Math.PI * 2);
             const duration = 5500;
