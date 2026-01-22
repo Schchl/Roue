@@ -291,15 +291,13 @@
     </div>
 
     <script>
-        // Tracking des événements
+        // Tracking des événements (Google Analytics ou LocalStorage)
         function trackEvent(eventName) {
-            // Incrémenter le compteur local
             const count = parseInt(localStorage.getItem(eventName) || '0') + 1;
             localStorage.setItem(eventName, count.toString());
             console.log(`Event tracked: ${eventName} (Total: ${count})`);
         }
 
-        // Tracker la visite de la page (scan QR code)
         window.addEventListener('load', () => {
             trackEvent('qr_scans');
             displayStats();
@@ -316,24 +314,21 @@
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const centerX = 200;
-        const centerY = 200;
-        const radius = 170;
-        
+        // Initialisation des variables
         let currentRotation = 0;
         let isSpinning = false;
 
+        // --- 1. CONFIGURATION DES PRIX (Total = 100) ---
         const prizes = [
-            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌' },
-            { text: 'Tee-shirt 👕', winning: true, color: '#df0000', icon: '🏆' },
-            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌' },
-            { text: 'Casquette 🧢', winning: true, color: '#df0000', icon: '🏆' },
-            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌' },
-            { text: 'Goodies 🎉', winning: true, color: '#df0000', icon: '🏆' }
+            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌', probability: 24 },
+            { text: 'Tee-shirt 👕', winning: true, color: '#df0000', icon: '🏆', probability: 2 },
+            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌', probability: 23 },
+            { text: 'Casquette 🧢', winning: true, color: '#df0000', icon: '🏆', probability: 8 },
+            { text: 'Perdu 😢', winning: false, color: '#1a1a1a', icon: '❌', probability: 23 },
+            { text: 'Goodies 🎉', winning: true, color: '#df0000', icon: '🏆', probability: 20 }
         ];
 
         function drawWheel(rotation = 0) {
-            // Ajuster la taille du canvas pour mobile
             const isMobile = window.innerWidth <= 768;
             const size = isMobile ? Math.min(window.innerWidth - 40, 350) : 400;
             
@@ -351,10 +346,9 @@
             ctx.translate(centerX, centerY);
             ctx.rotate(rotation);
 
-            const numSegments = 6;
+            const numSegments = prizes.length;
             const anglePerSegment = (Math.PI * 2) / numSegments;
 
-            // Dessiner les segments
             for (let i = 0; i < numSegments; i++) {
                 const startAngle = i * anglePerSegment;
                 const endAngle = startAngle + anglePerSegment;
@@ -376,8 +370,6 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = 'white';
-                
-                // Afficher uniquement l'icône sur la roue
                 ctx.font = 'bold 40px Arial';
                 ctx.fillText(prizes[i].icon, radius * 0.65, 0);
                 ctx.restore();
@@ -392,7 +384,6 @@
             ctx.lineWidth = 5;
             ctx.stroke();
 
-            // Texte SPIN
             ctx.fillStyle = '#df0000';
             ctx.font = 'bold 20px Arial';
             ctx.textAlign = 'center';
@@ -400,8 +391,6 @@
             ctx.fillText('SPIN', 0, 0);
 
             ctx.restore();
-
-            // Dessiner la flèche
             drawPointer();
         }
 
@@ -413,7 +402,6 @@
             ctx.save();
             ctx.translate(centerX, 30);
             
-            // Cercle
             ctx.beginPath();
             ctx.arc(0, 0, 15, 0, Math.PI * 2);
             ctx.fillStyle = '#df0000';
@@ -422,7 +410,6 @@
             ctx.lineWidth = 3;
             ctx.stroke();
             
-            // Triangle
             ctx.beginPath();
             ctx.moveTo(-15, 15);
             ctx.lineTo(15, 15);
@@ -441,6 +428,23 @@
             return 1 - Math.pow(1 - t, 3);
         }
 
+        function getWeightedWinnerIndex() {
+            let totalWeight = 0;
+            for (let i = 0; i < prizes.length; i++) {
+                totalWeight += prizes[i].probability;
+            }
+
+            let random = Math.random() * totalWeight;
+
+            for (let i = 0; i < prizes.length; i++) {
+                random -= prizes[i].probability;
+                if (random <= 0) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
         function spinWheel() {
             if (isSpinning) return;
             
@@ -448,53 +452,90 @@
             const spinBtn = document.getElementById('spin-btn');
             spinBtn.disabled = true;
 
-            // Tracker le tour de roue
             trackEvent('wheel_spins');
 
-            const totalRotation = Math.PI * 2 * 8 + (Math.random() * Math.PI * 2);
-            const duration = 5500;
+            // 1. On détermine le gagnant
+            const winningIndex = getWeightedWinnerIndex();
+            
+            // 2. Calculs des angles
+            const segmentAngle = (Math.PI * 2) / prizes.length;
+            
+            // Le pointeur est en haut (270° ou 3PI/2)
+            const pointerAngle = 3 * Math.PI / 2;
+            
+            // On vise le CENTRE de la case gagnante
+            // Formule : Angle Pointeur - (Index * TailleSegment) - (Demi-Segment pour centrer)
+            let targetBaseAngle = pointerAngle - (winningIndex * segmentAngle) - (segmentAngle / 2);
+            
+            // On ajoute un petit aléatoire (varie de +/- 40% de la part) pour le réalisme
+            const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.8);
+            targetBaseAngle += randomOffset;
+
+            // --- NOUVELLE LOGIQUE DE ROTATION ---
+            
+            // On veut savoir où on est actuellement dans le cercle (entre 0 et 360°)
+            // Le modulo % permet de garder le reste de la division par un tour complet
+            const currentPosition = currentRotation % (Math.PI * 2);
+            
+            // On calcule la distance qu'il reste à parcourir pour atteindre la cible
+            let distanceToGo = targetBaseAngle - currentPosition;
+            
+            // Si la distance est négative (la cible est "derrière"), on ajoute un tour pour qu'elle soit "devant"
+            // On s'assure ainsi de toujours tourner dans le sens horaire (positif)
+            while (distanceToGo < 0) {
+                distanceToGo += (Math.PI * 2);
+            }
+            
+            // ICI : On ajoute le nombre de tours supplémentaires désirés (ex: 8 tours)
+            // Plus le chiffre est grand, plus ça tourne longtemps
+            const extraSpins = 8; 
+            distanceToGo += (Math.PI * 2 * extraSpins);
+            
+            // La destination finale est la position actuelle + la distance calculée
+            const finalTargetRotation = currentRotation + distanceToGo;
+
+            // --- FIN CALCULS ---
+
+            // J'ai augmenté un peu la durée (6s) pour que les 8 tours ne soient pas trop rapides
+            const duration = 6000; 
             const startTime = Date.now();
             const startRotation = currentRotation;
 
             function animate() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
+                
+                // Effet de ralentissement (Ease Out)
                 const easedProgress = easeOutCubic(progress);
 
-                currentRotation = startRotation + totalRotation * easedProgress;
+                currentRotation = startRotation + (finalTargetRotation - startRotation) * easedProgress;
                 drawWheel(currentRotation);
 
                 if (progress < 1) {
                     requestAnimationFrame(animate);
                 } else {
                     isSpinning = false;
-                    showResult();
+                    showResult(winningIndex);
                 }
             }
 
             animate();
         }
 
-        function showResult() {
-            // Normaliser la rotation entre 0 et 2PI
-            const normalizedRotation = ((currentRotation % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-            const segmentAngle = (Math.PI * 2) / 6; // 60 degrés par segment
+        // CORRECTION ICI : La fonction accepte l'index forcé
+        function showResult(forcedIndex) {
+            let index = forcedIndex;
+
+            // Sécurité : si jamais la fonction est appelée sans argument (ancien code)
+            if (index === undefined) {
+                 const normalizedRotation = ((currentRotation % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+                 const segmentAngle = (Math.PI * 2) / prizes.length;
+                 const pointerAngle = (3 * Math.PI / 2);
+                 const actualPointerPosition = (pointerAngle - normalizedRotation + (Math.PI * 2)) % (Math.PI * 2);
+                 index = Math.floor(actualPointerPosition / segmentAngle) % prizes.length;
+            }
             
-            // La flèche pointe vers le haut (angle 3PI/2 ou -PI/2 dans le référentiel)
-            // Les segments commencent à être dessinés à partir de l'angle 0 (3h sur une horloge)
-            // Le segment 0 va de 0 à PI/3, segment 1 de PI/3 à 2PI/3, etc.
-            // La flèche est à -PI/2, donc à 3PI/2
-            const pointerAngle = (3 * Math.PI / 2);
-            
-            // Position réelle de la flèche après rotation
-            const actualPointerPosition = (pointerAngle - normalizedRotation + (Math.PI * 2)) % (Math.PI * 2);
-            
-            // Déterminer dans quel segment se trouve la flèche
-            const segmentIndex = Math.floor(actualPointerPosition / segmentAngle) % 6;
-            
-            console.log('Rotation:', normalizedRotation, 'Pointer pos:', actualPointerPosition, 'Segment:', segmentIndex, 'Prize:', prizes[segmentIndex].text);
-            
-            const prize = prizes[segmentIndex];
+            const prize = prizes[index];
             
             const resultTitle = document.getElementById('result-title');
             const resultText = document.getElementById('result-text');
@@ -504,8 +545,6 @@
                 resultTitle.textContent = '🎊 Félicitations !';
                 resultText.innerHTML = `Vous avez gagné : <strong>${prize.text}</strong>`;
                 staffInstruction.style.display = 'block';
-                
-                // Lancer les confettis
                 launchConfetti();
             } else {
                 resultTitle.textContent = '😢 Dommage !';
@@ -536,7 +575,6 @@
                     
                     container.appendChild(confetti);
                     
-                    // Nettoyer après l'animation
                     setTimeout(() => {
                         confetti.remove();
                     }, 4000);
@@ -565,15 +603,14 @@
         function resetGame() {
             const spinBtn = document.getElementById('spin-btn');
             spinBtn.disabled = false;
-            currentRotation = 0;
+            // On ne reset pas la rotation pour éviter les sauts visuels
             isSpinning = false;
             showScreen('welcome-screen');
         }
 
-        // Dessiner la roue initiale
-        drawWheel();
+        // Initialisation
+        drawWheel(currentRotation);
 
-        // Redessiner la roue lors du redimensionnement
         window.addEventListener('resize', () => {
             if (!isSpinning) {
                 drawWheel(currentRotation);
