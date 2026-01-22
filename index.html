@@ -73,6 +73,25 @@
             margin: 10px;
         }
 
+        .btn-avis{
+            background: white;
+            color: #df0000;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px;
+            border: 2px solid #df0000;
+        }
+
+        .btn-avis:hover {
+            transform: scale(1.05);
+            background: #df0000;
+            color: white;
+        }
+
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(223, 0, 0, 0.4);
@@ -170,21 +189,21 @@
 
         .google-link {
             display: inline-block;
-            background: white;
-            color: #df0000;
-            padding: 12px 30px;
-            border-radius: 25px;
+            background: linear-gradient(135deg, #df0000 0%, #8b0000 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
             text-decoration: none;
-            margin: 15px 0;
+            margin: 10px;
             font-weight: bold;
-            transition: transform 0.2s;
-            border: 2px solid #df0000;
+            font-size: 1.1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
         }
 
         .google-link:hover {
-            transform: scale(1.05);
-            background: #df0000;
-            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(223, 0, 0, 0.4);
         }
 
         .confetti {
@@ -235,11 +254,11 @@
                 <li>🎡 Tournez la roue pour découvrir votre gain</li>
             </ul>
             <p><strong>Important :</strong> Vous devez présenter la capture d'écran de votre avis pour valider votre participation !</p>
+            <button class="btn-avis" onclick="showConfirmation()">J'ai laissé mon avis</button>
+            <br/>
             <a href="https://g.page/r/VOTRE_LIEN_GOOGLE/review" target="_blank" class="google-link">
                 ⭐ Laisser un avis Google
             </a>
-            <br>
-            <button class="btn" onclick="showConfirmation()">J'ai laissé mon avis</button>
         </div>
 
         <!-- Écran de confirmation -->
